@@ -1,3 +1,9 @@
+bird (1.0.14-1~hardy+1) hardy-backports; urgency=low
+
+  * Backport for Ubuntu 8.04
+
+ -- Ondřej Surý <ondrej@debian.org>  Tue, 28 Apr 2009 15:56:12 +0200
+
 bird (1.0.14-1) unstable; urgency=low
 
   * New Upstream Version
