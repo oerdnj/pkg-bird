@@ -1,3 +1,9 @@
+bird (1.0.14-1~bpo40+1) etch-backports; urgency=low
+
+  * Backport for Debian 4.0
+
+ -- Ondřej Surý <ondrej@debian.org>  Tue, 28 Apr 2009 15:25:44 +0200
+
 bird (1.0.14-1) unstable; urgency=low
 
   * New Upstream Version
