@@ -1,3 +1,9 @@
+bird (1.0.14-1~intrepid+1) intrepid-backports; urgency=low
+
+  * Backport for Ubuntu 8.10
+
+ -- Ondřej Surý <ondrej@debian.org>  Tue, 28 Apr 2009 16:29:52 +0200
+
 bird (1.0.14-1) unstable; urgency=low
 
   * New Upstream Version
