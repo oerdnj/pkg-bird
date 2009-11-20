@@ -1,3 +1,9 @@
+bird (1.1.6-1~bpo50+1) lenny-backports; urgency=low
+
+  * Backport for Debian 5.0 lenny
+
+ -- Ondřej Surý <ondrej@debian.org>  Fri, 20 Nov 2009 12:13:28 +0100
+
 bird (1.1.6-1) unstable; urgency=low
 
   * New Upstream Version
