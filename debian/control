@@ -1,7 +1,7 @@
 Source: bird
 Section: net
 Priority: extra
-Build-Depends: bison, debhelper (>= 7), flex, m4, libreadline-dev | libreadline6-dev | libreadline5-dev, hardening-wrapper, dpatch
+Build-Depends: bison, debhelper (>= 7), flex, m4, libreadline-dev | libreadline6-dev | libreadline5-dev, dpatch
 Maintainer: Ondřej Surý <ondrej@debian.org>
 Standards-Version: 3.8.3
 
