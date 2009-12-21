@@ -123,19 +123,13 @@ IPv6 addresses. This option specifies what to do if BIRD have
 to send both addresses but does not know link-local address.
 This situation might happen when routes from other protocols
 are exported to BGP, or when improper updates are received
-from BGP peers.  
-<DT><CODE>self</CODE><DD><P>means that BIRD advertises its own
-local address instead. 
-<DT><CODE>drop</CODE><DD><P>means that BIRD skips that
-prefixes and logs error. 
-<DT><CODE>ignore</CODE><DD><P>means that BIRD ignores
+from BGP peers.  <CODE>self</CODE> means that BIRD advertises its own
+local address instead. <CODE>drop</CODE> means that BIRD skips that
+prefixes and logs error. <CODE>ignore</CODE> means that BIRD ignores
 the problem and sends just the global address (and therefore
-forms improper BGP update). Default: 
-<DT><CODE>self</CODE><DD><P>, unless BIRD
-is configured as a route server (option 
-<DT><CODE>rs client</CODE><DD><P>), in
-that case default is 
-<DT><CODE>drop</CODE><DD><P>, because route servers usually
+forms improper BGP update). Default: <CODE>self</CODE>, unless BIRD
+is configured as a route server (option <CODE>rs client</CODE>), in
+that case default is <CODE>drop</CODE>, because route servers usually
 does not forward packets ifselves.
 <P>
 <DT><CODE>source address <I>ip</I></CODE><DD><P>Define local address we should use
@@ -169,6 +163,16 @@ BIRD does not implement obsoleted RFC 1863, but uses ad-hoc implementation,
 which behaves like plain EBGP but reduces modifications to advertised route
 attributes to be transparent (for example does not prepend its AS number to
 AS PATH attribute and keep MED attribute). Default: disabled.
+<P>
+<DT><CODE>enable route refresh <I>switch</I></CODE><DD><P>When BGP speaker
+changes its import filter, it has to re-examine all routes
+received from its neighbor against the new filter. As these
+routes might not be available, there is a BGP protocol
+extension Route Refresh (specified in RFC 2918) that allows
+BGP speaker to request re-advertisment of all routes from its
+neighbor. This option specifies whether BIRD advertises this
+capability and accepts such requests. Even when disabled, BIRD
+can send route refresh requests. Default: on.
 <P>
 <DT><CODE>enable as4 <I>switch</I></CODE><DD><P>BGP protocol was designed to use 2B AS numbers
 and was extended later to allow 4B AS number. BIRD supports 4B AS extension,

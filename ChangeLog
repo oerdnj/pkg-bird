@@ -1,3 +1,113 @@
+commit 053dc3d81fe6470966bc35a852e791de0c00ee68
+Author: Ondrej 'Feela' Filip <feela@atrey.karlin.mff.cuni.cz>
+Date:   Sun Dec 20 16:18:22 2009 +0100
+
+    Typo corrected.
+
+commit ea7ada3809ed672bd9d2f9e5742f42b238cc5389
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Sun Dec 20 14:59:12 2009 +0100
+
+    Fixes a new bug in the pipe protocol soft reconfiguration.
+    
+    Also updates route reload for pipes.
+
+commit 1a5178587ff63234d1b323fca965acb4a42cb9e2
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Sun Dec 20 12:13:15 2009 +0100
+
+    Fixes unnecessary pipe restart during configure.
+
+commit 6877ff73a61d1924bc8940f7b646f52f7b34eca0
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Sat Dec 19 18:45:46 2009 +0100
+
+    NEWS and version update.
+
+commit 8a7fb8858fa87bce6f2f15ee2bbb77704b5fff4e
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Mon Dec 14 01:32:37 2009 +0100
+
+    Finishes 'route reload' feature.
+
+commit 28008482a97c0ac70e648759fe37bad0633ed9f7
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Sat Dec 12 01:35:51 2009 +0100
+
+    Minor fixes in OSPF.
+
+commit a421ec33cb9029899122d0ab63bab0fa268348d2
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Wed Dec 2 22:22:40 2009 +0100
+
+    Fixes silly bug.
+
+commit 11361a101517c2c87e3d35d2c63cacb3ddb97724
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Wed Dec 2 22:19:47 2009 +0100
+
+    Implements route re-feed.
+    
+    This can be used to re-feed routes to protocol after soft change in
+    export filters.
+
+commit 11787b8473ae1685d43dad809592fabc64eb8f46
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Wed Dec 2 17:26:16 2009 +0100
+
+    Fixes some problems in pipes.
+    
+    For transparent pipes, loop detection works correctly now.
+    Pipes are now more symmetric - in both directions filtering
+    is done in do_rte_announce().
+
+commit e8b29bdc8dc34d4a0358458907a5d8ac29011d28
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Wed Dec 2 14:33:34 2009 +0100
+
+    Fixes one missing log message.
+
+commit 4b84bd4554b2a9331055bfd8d02a0bab0d10df92
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Sun Nov 29 10:29:33 2009 +0100
+
+    Fixes some crashes in OSPFv2.
+
+commit a6250a7d1013442ad4feb0d67128a707f2c6880b
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Thu Nov 26 23:23:29 2009 +0100
+
+    Fix -p option.
+
+commit bf47fe4b2e40ccfcfe6af2d86548d06cdf9739c5
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Thu Nov 26 20:47:59 2009 +0100
+
+    Implements BGP route refresh.
+
+commit 5e6f568115511e2bcf43c60dfdcbd7a35cb04b93
+Merge: 069bfcb... 1f8be1e...
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Tue Nov 24 17:19:23 2009 +0100
+
+    Merge commit 'origin/master' into dev
+
+commit 069bfcb53cef012c063a27e5af93d620be2917bd
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Tue Nov 24 17:15:20 2009 +0100
+
+    Fixes serious bug in core related to route filtering.
+    
+    If protocol announces a route, route is accepted by import filter to
+    routing table, and later it announces replacement of that route that is
+    rejected by import filter, old route remains in routing table.
+
+commit 717e4c4d8173a8dbae2956f1703ff6d4365a9d34
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Fri Nov 20 09:29:29 2009 +0100
+
+    Fixes in the documentation.
+
 commit 1f8be1e46f666e79072cc5f800c2dba91788368b
 Author: Ondrej Filip <feela@trubka.network.cz>
 Date:   Thu Nov 19 23:15:58 2009 +0100
