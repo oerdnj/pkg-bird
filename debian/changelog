@@ -1,14 +1,21 @@
-bird (1.1.6-1~bpo40+1) etch-backports; urgency=low
+bird (1.1.7-1~bpo40+1) etch-backports; urgency=low
 
   * Backport for Debian 4.0 etch
 
- -- Ondřej Surý <ondrej@debian.org>  Fri, 20 Nov 2009 11:59:46 +0100
+ -- Ondřej Surý <ondrej@debian.org>  Mon, 21 Dec 2009 09:02:18 +0100
+
+bird (1.1.7-1) unstable; urgency=low
+
+  * New Upstream Version
+  * Update build dependency on libreadline-dev (and stay friendly with
+    backporters, ie. me) (Closes: #553734)
+  * Description cleanup (Closes: #533210) (Courtesy of Dann Frazier)
+
+ -- Ondřej Surý <ondrej@debian.org>  Mon, 21 Dec 2009 08:47:37 +0100
 
 bird (1.1.6-1) unstable; urgency=low
 
   * New Upstream Version
-  * Update build dependency on libreadline-dev (and stay friendly with
-    backporters, ie. me)
 
  -- Ondřej Surý <ondrej@debian.org>  Fri, 20 Nov 2009 11:12:56 +0100
 
