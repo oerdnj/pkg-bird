@@ -20,6 +20,7 @@ static struct nbma_node *this_nbma;
 static struct area_net_config *this_pref;
 static struct ospf_stubnet_config *this_stubnet; 
 
+#ifdef OSPFv2
 static void
 finish_iface_config(struct ospf_iface_patt *ip)
 {
@@ -31,6 +32,16 @@ finish_iface_config(struct ospf_iface_patt *ip)
   if ((ip->autype == OSPF_AUTH_NONE) && (ip->passwords != NULL))
     log(L_WARN "Password option without authentication option does not make sense");
 }
+#endif
+
+#ifdef OSPFv3
+static void
+finish_iface_config(struct ospf_iface_patt *ip)
+{
+  if ((ip->autype != OSPF_AUTH_NONE) || (get_passwords() != NULL))
+    cf_error("Authentication not supported in OSPFv3");
+}
+#endif
 
 CF_DECLS
 
@@ -40,7 +51,7 @@ CF_KEYWORDS(HELLO, TRANSMIT, PRIORITY, DEAD, NONBROADCAST, POINTOPOINT, TYPE)
 CF_KEYWORDS(NONE, SIMPLE, AUTHENTICATION, STRICT, CRYPTOGRAPHIC)
 CF_KEYWORDS(ELIGIBLE, POLL, NETWORKS, HIDDEN, VIRTUAL, LINK)
 CF_KEYWORDS(RX, BUFFER, LARGE, NORMAL, STUBNET, HIDDEN, SUMMARY)
-CF_KEYWORDS(WAIT, DELAY)
+CF_KEYWORDS(WAIT, DELAY, LSADB)
 
 %type <t> opttext
 
@@ -308,6 +319,9 @@ CF_CLI(SHOW OSPF TOPOLOGY, optsym opttext, [<name>], [[Show information about OS
 
 CF_CLI(SHOW OSPF STATE, optsym opttext, [<name>], [[Show information about OSPF network state]])
 { ospf_sh_state(proto_get_named($4, &proto_ospf), 1); };
+
+CF_CLI(SHOW OSPF LSADB, optsym opttext, [<name>], [[Show content of OSPF LSA database]])
+{ ospf_sh_lsadb(proto_get_named($4, &proto_ospf)); };
 
 CF_CODE
 
