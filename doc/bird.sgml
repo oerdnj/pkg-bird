@@ -78,7 +78,7 @@ protocols to be incorporated easily. Among other features, BIRD supports:
 	<item>multiple routing tables
 	<item>the Border Gateway Protocol (BGPv4)
 	<item>the Routing Information Protocol (RIPv2)
-	<item>the Open Shortest Path First protocol (OSPFv2)
+	<item>the Open Shortest Path First protocol (OSPFv2, OSPFv3)
 	<item>a virtual protocol for exchange of routes between different routing tables on a single host
 	<item>a command-line interface allowing on-line control and inspection
 		of status of the daemon
@@ -238,6 +238,14 @@ protocol rip {
 	logging of connects and disconnects, 2 and higher for logging of
 	all client commands). Default: 0.
 
+	<tag>mrtdump "<m/filename/"</tag>
+	Set MRTdump file name. This option must be specified to allow MRTdump feature.
+	Default: no dump file.
+
+	<tag>mrtdump protocols all|off|{ states, messages }</tag>
+	Set global defaults of MRTdump options. See <cf/mrtdump/ in the following section.
+	Default: off.
+
 	<tag>filter <m/name local variables/{ <m/commands/ }</tag> Define a filter. You can learn more about filters
 	in the following chapter. 
 
@@ -301,9 +309,22 @@ to zero to disable it. An empty <cf><m/switch/</cf> is equivalent to <cf/on/
 	<cf/events/ for events internal to the protocol and
 	<cf/packets/ for packets sent and received by the protocol. Default: off.
 
-	<tag>router id <m/IPv4 address/</tag> This option can be used to override global
-	router id for a given protocol. This option is not yet implemented for OSPF
-	protocol. Default: uses global router id.
+	<tag>mrtdump all|off|{ states, messages }</tag>
+
+	Set protocol MRTdump flags. MRTdump is a standard binary
+	format for logging information from routing protocols and
+	daemons.  These flags control what kind of information is
+	logged from the protocol to the MRTdump file (which must be
+	specified by global <cf/mrtdump/ option, see the previous
+	section). Although these flags are similar to flags of
+	<cf/debug/ option, their meaning is different and
+	protocol-specific. For BGP protocol, <cf/states/ logs BGP
+	state changes and <cf/messages/ logs received BGP messages.
+	Other protocols does not support MRTdump yet.
+
+	<tag>router id <m/IPv4 address/</tag> This option can be used
+	to override global router id for a given protocol. Default:
+	uses global router id.
 
 	<tag>import all | none | filter <m/name/ | filter { <m/filter commands/ } | where <m/filter expression/</tag> 
 	Specify a filter to be used for filtering routes coming from the protocol to the routing table. <cf/all/ is shorthand for <cf/where true/ and <cf/none/ is shorthand for <cf/where false/. Default: <cf/all/.
@@ -326,7 +347,7 @@ to zero to disable it. An empty <cf><m/switch/</cf> is equivalent to <cf/on/
 	Specifies a set of interfaces on which the protocol is activated with
 	given interface-specific options. A set of interfaces specified by one
 	interface option is described using an interface pattern. The
-	interface pattern consists of a sequence of clauses (separted by
+	interface pattern consists of a sequence of clauses (separated by
 	commas), each clause may contain a mask, a prefix, or both of them. An
 	interface matches the clause if its name matches the mask (if
 	specified) and its address matches the prefix (if specified). Mask is
@@ -487,7 +508,7 @@ This argument can be omitted if there exists only a single instance.
 	Reload configuration from a given file. BIRD will smoothly
 	switch itself to the new configuration, protocols are
 	reconfigured if possible, restarted otherwise. Changes in
-	filters usualy lead to restart of affected protocols. If
+	filters usually lead to restart of affected protocols. If
 	<cf/soft/ option is used, changes in filters does not cause
 	BIRD to restart affected protocols, therefore already accepted
 	routes (according to old filters) would be still propagated,
@@ -970,7 +991,7 @@ for each neighbor using the following configuration parameters:
 	received from its neighbor against the new filter. As these
 	routes might not be available, there is a BGP protocol
 	extension Route Refresh (specified in RFC 2918) that allows
-	BGP speaker to request re-advertisment of all routes from its
+	BGP speaker to request re-advertisement of all routes from its
 	neighbor. This option specifies whether BIRD advertises this
 	capability and accepts such requests. Even when disabled, BIRD
 	can send route refresh requests. Default: on.
@@ -1044,9 +1065,12 @@ for each neighbor using the following configuration parameters:
 	Discriminator to be used during route selection when the MED attribute
 	is missing. Default: 0.
 
-	<tag>default bgp_local_pref <m/number/</tag> Value of the Local Preference
-	to be used during route selection when the Local Preference attribute
-	is missing. Default: 0.
+	<tag>default bgp_local_pref <m/number/</tag> A default value
+	for the Local Preference attribute. It is used when a new
+	Local Preference attribute is attached to a route by the BGP
+	protocol itself (for example, if a route is received through
+	eBGP and therefore does not have such attribute). Default: 100
+	(0 in pre-1.2.0 versions of BIRD).
 </descrip>
 
 <sect1>Attributes
@@ -1277,14 +1301,15 @@ protocol kernel {		# Secondary routing table
 <sect1>Introduction
 
 <p>Open Shortest Path First (OSPF) is a quite complex interior gateway
-protocol. The current IPv4 version (OSPFv2) is defined
-in RFC 2328<htmlurl url="ftp://ftp.rfc-editor.org/in-notes/rfc2328.txt">. It's a link
-state (a.k.a. shortest path first) protocol -- each router maintains a database
-describing the autonomous system's topology. Each participating router
-has an identical copy of the database and all routers run the same algorithm
-calculating a shortest path tree with themselves as a root.
-OSPF chooses the least cost path as the best path.
-(OSPFv3 - OSPF for IPv6 is not supported yet.)
+protocol. The current IPv4 version (OSPFv2) is defined in RFC
+2328<htmlurl url="ftp://ftp.rfc-editor.org/in-notes/rfc2328.txt"> and
+the current IPv6 version (OSPFv3) is defined in RFC 5340<htmlurl
+url="ftp://ftp.rfc-editor.org/in-notes/rfc5340.txt">  It's a link state
+(a.k.a. shortest path first) protocol -- each router maintains a
+database describing the autonomous system's topology. Each participating
+router has an identical copy of the database and all routers run the
+same algorithm calculating a shortest path tree with themselves as a
+root. OSPF chooses the least cost path as the best path.
 
 <p>In OSPF, the autonomous system can be split to several areas in order
 to reduce the amount of resources consumed for exchanging the routing
@@ -1345,7 +1370,7 @@ protocol ospf &lt;name&gt; {
 			rx buffer [normal|large|&lt;num&gt;];
 			type [broadcast|nonbroadcast|pointopoint];
 			strict nonbroadcast &lt;switch&gt;;
-			authentication [none|simple|cryptographics];
+			authentication [none|simple|cryptographic];
 			password "&lt;text&gt;";
 			password "&lt;text&gt;" {
 				id &lt;num&gt;;
@@ -1365,7 +1390,7 @@ protocol ospf &lt;name&gt; {
 			wait &lt;num&gt;;
 			dead count &lt;num&gt;;
 			dead &lt;num&gt;;
-			authentication [none|simple];
+			authentication [none|simple|cryptographic];
 			password "&lt;text&gt;";
 		};
 	};
@@ -1397,7 +1422,7 @@ protocol ospf &lt;name&gt; {
 	 at periodical intervals of <m/num/ seconds. The default value is 1.
 
 	<tag>networks { <m/set/ }</tag>
-         Definition of area IP ranges. This is used in summary lsa origination.
+         Definition of area IP ranges. This is used in summary LSA origination.
 	 Hidden networks are not propagated into other areas.
 
 	<tag>stubnet <m/prefix/ { <m/options/ }</tag>
@@ -1488,7 +1513,7 @@ protocol ospf &lt;name&gt; {
 
 	<tag>strict nonbroadcast <M>switch</M></tag>
 	 If set, don't send hello to any undefined neighbor. This switch
-	 is ignored on on any non-NBMA network. Default is No.
+	 is ignored on any non-NBMA network. Default is No.
 
 	<tag>authentication none</tag>
 	 No passwords are sent in OSPF packets. This is the default value.
@@ -1501,7 +1526,7 @@ protocol ospf &lt;name&gt; {
 	<tag>authentication cryptographic</tag>
 	 16-byte long MD5 digest is appended to every packet. For the digest
          generation 16-byte long passwords are used. Those passwords are 
-         not sent via network, so this mechanismus is quite secure.
+         not sent via network, so this mechanism is quite secure.
          Packets can still be read by an attacker.
 
 	<tag>password "<M>text</M>"</tag>
@@ -1534,7 +1559,7 @@ Default is <cf/metric of type 2 = 10000/ and <cf/tag = 0/.
 
 <code>
 protocol ospf MyOSPF {
-        rfc1583compatibility yes;
+        rfc1583compat yes;
         tick 2;
 	export filter {
 		if source = RTS_BGP then {
@@ -1730,9 +1755,7 @@ not currently supported. RIPv4 MD5 authentication (RFC 2082<htmlurl url="ftp://f
 
 <p>RIP is a very simple protocol, and it has a lot of shortcomings. Slow
 convergence, big network load and inability to handle larger networks
-makes it pretty much obsolete in IPv4 world. (It is still usable on
-very small networks.) It is widely used in IPv6 networks,
-because there are no good implementations of OSPFv3.
+makes it pretty much obsolete. (It is still usable on very small networks.)
 
 <sect1>Configuration
 
@@ -1872,7 +1895,6 @@ there are still some features which would surely deserve to be
 implemented in future versions of BIRD:
 
 <itemize>
-<item>OSPF for IPv6 networks
 <item>OSPF NSSA areas and opaque LSA's
 <item>Route aggregation and flap dampening
 <item>Generation of IPv6 router advertisements

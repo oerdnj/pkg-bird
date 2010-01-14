@@ -1,8 +1,14 @@
-bird (1.1.7-1~karmic+1) karmic; urgency=low
+bird (1.2.0-1~karmic+1) karmic; urgency=low
 
   * Backport for Ubuntu 9.10
 
- -- Ondřej Surý <ondrej@debian.org>  Tue, 05 Jan 2010 14:31:45 +0100
+ -- Ondřej Surý <ondrej@debian.org>  Thu, 14 Jan 2010 17:00:09 +0100
+
+bird (1.2.0-1) unstable; urgency=low
+
+  * New Upstream Version
+
+ -- Ondřej Surý <ondrej@debian.org>  Thu, 14 Jan 2010 15:21:36 +0100
 
 bird (1.1.7-1) unstable; urgency=low
 

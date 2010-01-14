@@ -75,6 +75,12 @@ destinations. Default: log everything to the system log.
 logging of connects and disconnects, 2 and higher for logging of
 all client commands). Default: 0.
 <P>
+<DT><CODE>mrtdump "<I>filename</I>"</CODE><DD><P>Set MRTdump file name. This option must be specified to allow MRTdump feature.
+Default: no dump file.
+<P>
+<DT><CODE>mrtdump protocols all|off|{ states, messages }</CODE><DD><P>Set global defaults of MRTdump options. See <CODE>mrtdump</CODE> in the following section.
+Default: off.
+<P>
 <DT><CODE>filter <I>name local variables</I>{ <I>commands</I> }</CODE><DD><P>Define a filter. You can learn more about filters
 in the following chapter. 
 <P>
@@ -137,9 +143,20 @@ or only of the types selected: <CODE>states</CODE> for protocol state changes
 <CODE>events</CODE> for events internal to the protocol and
 <CODE>packets</CODE> for packets sent and received by the protocol. Default: off.
 <P>
-<DT><CODE>router id <I>IPv4 address</I></CODE><DD><P>This option can be used to override global
-router id for a given protocol. This option is not yet implemented for OSPF
-protocol. Default: uses global router id.
+<DT><CODE>mrtdump all|off|{ states, messages }</CODE><DD><P>Set protocol MRTdump flags. MRTdump is a standard binary
+format for logging information from routing protocols and
+daemons.  These flags control what kind of information is
+logged from the protocol to the MRTdump file (which must be
+specified by global <CODE>mrtdump</CODE> option, see the previous
+section). Although these flags are similar to flags of
+<CODE>debug</CODE> option, their meaning is different and
+protocol-specific. For BGP protocol, <CODE>states</CODE> logs BGP
+state changes and <CODE>messages</CODE> logs received BGP messages.
+Other protocols does not support MRTdump yet.
+<P>
+<DT><CODE>router id <I>IPv4 address</I></CODE><DD><P>This option can be used
+to override global router id for a given protocol. Default:
+uses global router id.
 <P>
 <DT><CODE>import all | none | filter <I>name</I> | filter { <I>filter commands</I> } | where <I>filter expression</I></CODE><DD><P>Specify a filter to be used for filtering routes coming from the protocol to the routing table. <CODE>all</CODE> is shorthand for <CODE>where true</CODE> and <CODE>none</CODE> is shorthand for <CODE>where false</CODE>. Default: <CODE>all</CODE>.
 <P>
@@ -160,7 +177,7 @@ output of 'show route all' command.
 <A NAME="dsc-iface"></A> interface [-] [ "<I>mask</I>" ] [ <I>prefix</I> ] [, ...] [ { <I>option</I> ; [...] } ]</CODE><DD><P>Specifies a set of interfaces on which the protocol is activated with
 given interface-specific options. A set of interfaces specified by one
 interface option is described using an interface pattern. The
-interface pattern consists of a sequence of clauses (separted by
+interface pattern consists of a sequence of clauses (separated by
 commas), each clause may contain a mask, a prefix, or both of them. An
 interface matches the clause if its name matches the mask (if
 specified) and its address matches the prefix (if specified). Mask is

@@ -169,7 +169,7 @@ changes its import filter, it has to re-examine all routes
 received from its neighbor against the new filter. As these
 routes might not be available, there is a BGP protocol
 extension Route Refresh (specified in RFC 2918) that allows
-BGP speaker to request re-advertisment of all routes from its
+BGP speaker to request re-advertisement of all routes from its
 neighbor. This option specifies whether BIRD advertises this
 capability and accepts such requests. Even when disabled, BIRD
 can send route refresh requests. Default: on.
@@ -243,9 +243,12 @@ peer). For details, see RFC 5004. Default: off.
 Discriminator to be used during route selection when the MED attribute
 is missing. Default: 0.
 <P>
-<DT><CODE>default bgp_local_pref <I>number</I></CODE><DD><P>Value of the Local Preference
-to be used during route selection when the Local Preference attribute
-is missing. Default: 0.
+<DT><CODE>default bgp_local_pref <I>number</I></CODE><DD><P>A default value
+for the Local Preference attribute. It is used when a new
+Local Preference attribute is attached to a route by the BGP
+protocol itself (for example, if a route is received through
+eBGP and therefore does not have such attribute). Default: 100
+(0 in pre-1.2.0 versions of BIRD).
 </DL>
 <P>
 <H3>Attributes</H3>
@@ -493,15 +496,16 @@ protocol kernel {               # Secondary routing table
 <H3>Introduction</H3>
 
 <P>Open Shortest Path First (OSPF) is a quite complex interior gateway
-protocol. The current IPv4 version (OSPFv2) is defined
-in RFC 2328
-<A HREF="ftp://ftp.rfc-editor.org/in-notes/rfc2328.txt">ftp://ftp.rfc-editor.org/in-notes/rfc2328.txt</A>. It's a link
-state (a.k.a. shortest path first) protocol -- each router maintains a database
-describing the autonomous system's topology. Each participating router
-has an identical copy of the database and all routers run the same algorithm
-calculating a shortest path tree with themselves as a root.
-OSPF chooses the least cost path as the best path.
-(OSPFv3 - OSPF for IPv6 is not supported yet.)
+protocol. The current IPv4 version (OSPFv2) is defined in RFC
+2328
+<A HREF="ftp://ftp.rfc-editor.org/in-notes/rfc2328.txt">ftp://ftp.rfc-editor.org/in-notes/rfc2328.txt</A> and
+the current IPv6 version (OSPFv3) is defined in RFC 5340
+<A HREF="ftp://ftp.rfc-editor.org/in-notes/rfc5340.txt">ftp://ftp.rfc-editor.org/in-notes/rfc5340.txt</A>  It's a link state
+(a.k.a. shortest path first) protocol -- each router maintains a
+database describing the autonomous system's topology. Each participating
+router has an identical copy of the database and all routers run the
+same algorithm calculating a shortest path tree with themselves as a
+root. OSPF chooses the least cost path as the best path.
 <P>
 <P>In OSPF, the autonomous system can be split to several areas in order
 to reduce the amount of resources consumed for exchanging the routing
@@ -563,7 +567,7 @@ protocol ospf &lt;name&gt; {
                         rx buffer [normal|large|&lt;num&gt;];
                         type [broadcast|nonbroadcast|pointopoint];
                         strict nonbroadcast &lt;switch&gt;;
-                        authentication [none|simple|cryptographics];
+                        authentication [none|simple|cryptographic];
                         password "&lt;text&gt;";
                         password "&lt;text&gt;" {
                                 id &lt;num&gt;;
@@ -583,7 +587,7 @@ protocol ospf &lt;name&gt; {
                         wait &lt;num&gt;;
                         dead count &lt;num&gt;;
                         dead &lt;num&gt;;
-                        authentication [none|simple];
+                        authentication [none|simple|cryptographic];
                         password "&lt;text&gt;";
                 };
         };
@@ -611,7 +615,7 @@ is not performed when a single link state
 change arrives. To lower the CPU utilization, it's processed later
 at periodical intervals of <I>num</I> seconds. The default value is 1.
 <P>
-<DT><CODE>networks { <I>set</I> }</CODE><DD><P>Definition of area IP ranges. This is used in summary lsa origination.
+<DT><CODE>networks { <I>set</I> }</CODE><DD><P>Definition of area IP ranges. This is used in summary LSA origination.
 Hidden networks are not propagated into other areas.
 <P>
 <DT><CODE>stubnet <I>prefix</I> { <I>options</I> }</CODE><DD><P>Stub networks are networks that are not transit networks
@@ -685,7 +689,7 @@ is performed there which reduces the number of messages sent.
 separately because of lack of multicast capabilities.
 <P>
 <DT><CODE>strict nonbroadcast <I>switch</I></CODE><DD><P>If set, don't send hello to any undefined neighbor. This switch
-is ignored on on any non-NBMA network. Default is No.
+is ignored on any non-NBMA network. Default is No.
 <P>
 <DT><CODE>authentication none</CODE><DD><P>No passwords are sent in OSPF packets. This is the default value.
 <P>
@@ -695,7 +699,7 @@ very weak.
 <P>
 <DT><CODE>authentication cryptographic</CODE><DD><P>16-byte long MD5 digest is appended to every packet. For the digest
 generation 16-byte long passwords are used. Those passwords are 
-not sent via network, so this mechanismus is quite secure.
+not sent via network, so this mechanism is quite secure.
 Packets can still be read by an attacker.
 <P>
 <DT><CODE>password "<I>text</I>"</CODE><DD><P>An 8-byte or 16-byte password used for authentication.
@@ -728,7 +732,7 @@ Default is <CODE>metric of type 2 = 10000</CODE> and <CODE>tag = 0</CODE>.
 <HR>
 <PRE>
 protocol ospf MyOSPF {
-        rfc1583compatibility yes;
+        rfc1583compat yes;
         tick 2;
         export filter {
                 if source = RTS_BGP then {
@@ -934,9 +938,7 @@ not currently supported. RIPv4 MD5 authentication (RFC 2082
 <P>
 <P>RIP is a very simple protocol, and it has a lot of shortcomings. Slow
 convergence, big network load and inability to handle larger networks
-makes it pretty much obsolete in IPv4 world. (It is still usable on
-very small networks.) It is widely used in IPv6 networks,
-because there are no good implementations of OSPFv3.
+makes it pretty much obsolete. (It is still usable on very small networks.)
 <P>
 <H3>Configuration</H3>
 
