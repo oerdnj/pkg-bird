@@ -1835,15 +1835,13 @@ esac
 if test "$enable_ipv6" = yes ; then
 	ip=ipv6
 	SUFFIX6=6
-	if test "$with_protocols" = all ; then
-		with_protocols=bgp,pipe,rip,static
-	fi
 else
 	ip=ipv4
 	SUFFIX6=""
-	if test "$with_protocols" = all ; then
-		with_protocols=bgp,ospf,pipe,rip,static
-	fi
+fi
+
+if test "$with_protocols" = all ; then
+	with_protocols=bgp,ospf,pipe,rip,static
 fi
 
 ac_ext=c
@@ -4195,7 +4193,7 @@ if test "${bird_cv_sys_linux_version+set}" = set; then
 else
 
 cat > conftest.$ac_ext <<EOF
-#line 4198 "configure"
+#line 4196 "configure"
 #include "confdefs.h"
 #include <linux/version.h>
 VERSION: UTS_RELEASE
@@ -4225,7 +4223,7 @@ if test "${bird_cv_sys_linux_version+set}" = set; then
 else
 
 cat > conftest.$ac_ext <<EOF
-#line 4228 "configure"
+#line 4226 "configure"
 #include "confdefs.h"
 #include <linux/version.h>
 VERSION: UTS_RELEASE

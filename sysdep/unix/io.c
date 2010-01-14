@@ -492,10 +492,6 @@ tm_format_reltime(char *x, bird_clock_t t)
 #define SOL_IPV6 IPPROTO_IPV6
 #endif
 
-#ifndef IPV6_ADD_MEMBERSHIP
-#define IPV6_ADD_MEMBERSHIP IP_ADD_MEMBERSHIP
-#endif
-
 static list sock_list;
 static struct birdsock *current_sock;
 static struct birdsock *stored_sock;
@@ -627,6 +623,12 @@ fill_in_sockaddr(sockaddr *sa, ip_addr a, unsigned port)
   set_inaddr(&sa->sin6_addr, a);
 }
 
+static inline void
+fill_in_sockifa(sockaddr *sa, struct iface *ifa)
+{
+  sa->sin6_scope_id = ifa ? ifa->index : 0;
+}
+
 void
 get_sockaddr(struct sockaddr_in6 *sa, ip_addr *a, unsigned *port, int check)
 {
@@ -652,6 +654,11 @@ fill_in_sockaddr(sockaddr *sa, ip_addr a, unsigned port)
   set_inaddr(&sa->sin_addr, a);
 }
 
+static inline void
+fill_in_sockifa(sockaddr *sa, struct iface *ifa)
+{
+}
+
 void
 get_sockaddr(struct sockaddr_in *sa, ip_addr *a, unsigned *port, int check)
 {
@@ -670,8 +677,7 @@ sk_set_ttl_int(sock *s)
 {
   int one = 1;
 #ifdef IPV6
-  if (s->type != SK_UDP_MC && s->type != SK_IP_MC &&
-      setsockopt(s->fd, SOL_IPV6, IPV6_UNICAST_HOPS, &s->ttl, sizeof(s->ttl)) < 0)
+  if (setsockopt(s->fd, SOL_IPV6, IPV6_UNICAST_HOPS, &s->ttl, sizeof(s->ttl)) < 0)
     return "IPV6_UNICAST_HOPS";
 #else
   if (setsockopt(s->fd, SOL_IP, IP_TTL, &s->ttl, sizeof(s->ttl)) < 0)
@@ -768,6 +774,149 @@ sk_set_md5_auth(sock *s, ip_addr a, char *passwd)
   return sk_set_md5_auth_int(s, &sa, passwd);
 }
 
+int
+sk_set_broadcast(sock *s, int enable)
+{
+  if (setsockopt(s->fd, SOL_SOCKET, SO_BROADCAST, &enable, sizeof(enable)) < 0)
+    {
+      log(L_ERR "sk_set_broadcast: SO_BROADCAST: %m");
+      return -1;
+    }
+
+  return 0;
+}
+
+
+#ifdef IPV6
+
+int
+sk_set_ipv6_checksum(sock *s, int offset)
+{
+  if (setsockopt(s->fd, IPPROTO_IPV6, IPV6_CHECKSUM, &offset, sizeof(offset)) < 0)
+    {
+      log(L_ERR "sk_set_ipv6_checksum: IPV6_CHECKSUM: %m");
+      return -1;
+    }
+
+  return 0;
+}
+
+int
+sk_setup_multicast(sock *s)
+{
+  char *err;
+  int zero = 0;
+  int index;
+
+  ASSERT(s->iface && s->iface->addr);
+
+  index = s->iface->index;
+  if (setsockopt(s->fd, SOL_IPV6, IPV6_MULTICAST_HOPS, &s->ttl, sizeof(s->ttl)) < 0)
+    ERR("IPV6_MULTICAST_HOPS");
+  if (setsockopt(s->fd, SOL_IPV6, IPV6_MULTICAST_LOOP, &zero, sizeof(zero)) < 0)
+    ERR("IPV6_MULTICAST_LOOP");
+  if (setsockopt(s->fd, SOL_IPV6, IPV6_MULTICAST_IF, &index, sizeof(index)) < 0)
+    ERR("IPV6_MULTICAST_IF");
+
+  return 0;
+
+bad:
+  log(L_ERR "sk_setup_multicast: %s: %m", err);
+  return -1;
+}
+
+int
+sk_join_group(sock *s, ip_addr maddr)
+{
+  struct ipv6_mreq mreq;
+	
+  set_inaddr(&mreq.ipv6mr_multiaddr, maddr);
+
+#ifdef CONFIG_IPV6_GLIBC_20
+  mreq.ipv6mr_ifindex = s->iface->index;
+#else
+  mreq.ipv6mr_interface = s->iface->index;
+#endif
+
+  if (setsockopt(s->fd, SOL_IPV6, IPV6_JOIN_GROUP, &mreq, sizeof(mreq)) < 0)
+    {
+      log(L_ERR "sk_join_group: IPV6_JOIN_GROUP: %m");
+      return -1;
+    }
+
+  return 0;
+}
+
+int
+sk_leave_group(sock *s, ip_addr maddr)
+{
+  struct ipv6_mreq mreq;
+	
+  set_inaddr(&mreq.ipv6mr_multiaddr, maddr);
+
+#ifdef CONFIG_IPV6_GLIBC_20
+  mreq.ipv6mr_ifindex = s->iface->index;
+#else
+  mreq.ipv6mr_interface = s->iface->index;
+#endif
+
+  if (setsockopt(s->fd, SOL_IPV6, IPV6_LEAVE_GROUP, &mreq, sizeof(mreq)) < 0)
+    {
+      log(L_ERR "sk_leave_group: IPV6_LEAVE_GROUP: %m");
+      return -1;
+    }
+
+  return 0;
+}
+
+#else /* IPV4 */
+
+int
+sk_setup_multicast(sock *s)
+{
+  char *err;
+
+  ASSERT(s->iface && s->iface->addr);
+
+  if (err = sysio_setup_multicast(s))
+    {
+      log(L_ERR "sk_setup_multicast: %s: %m", err);
+      return -1;
+    }
+
+  return 0;
+}
+
+int
+sk_join_group(sock *s, ip_addr maddr)
+{
+ char *err;
+
+ if (err = sysio_join_group(s, maddr))
+    {
+      log(L_ERR "sk_join_group: %s: %m", err);
+      return -1;
+    }
+
+  return 0;
+}
+
+int
+sk_leave_group(sock *s, ip_addr maddr)
+{
+ char *err;
+
+ if (err = sysio_leave_group(s, maddr))
+    {
+      log(L_ERR "sk_leave_group: %s: %m", err);
+      return -1;
+    }
+
+  return 0;
+}
+
+#endif 
+
 
 static void
 sk_tcp_connected(sock *s)
@@ -792,7 +941,14 @@ sk_passive_connected(sock *s, struct sockaddr *sa, int al, int type)
       t->rbsize = s->rbsize;
       t->tbsize = s->tbsize;
       if (type == SK_TCP)
-	get_sockaddr((sockaddr *) sa, &t->daddr, &t->dport, 1);
+	{
+	  sockaddr lsa;
+	  int lsa_len = sizeof(lsa);
+	  if (getsockname(fd, (struct sockaddr *) &lsa, &lsa_len) == 0)
+	    get_sockaddr(&lsa, &t->saddr, &t->sport, 1);
+
+	  get_sockaddr((sockaddr *) sa, &t->daddr, &t->dport, 1);
+	}
       sk_insert(t);
       if (err = sk_setup(t))
 	{
@@ -841,11 +997,9 @@ sk_open(sock *s)
       fd = socket(BIRD_PF, SOCK_STREAM, IPPROTO_TCP);
       break;
     case SK_UDP:
-    case SK_UDP_MC:
       fd = socket(BIRD_PF, SOCK_DGRAM, IPPROTO_UDP);
       break;
     case SK_IP:
-    case SK_IP_MC:
       fd = socket(BIRD_PF, SOCK_RAW, s->dport);
       break;
     case SK_MAGIC:
@@ -861,61 +1015,11 @@ sk_open(sock *s)
   if (err = sk_setup(s))
     goto bad;
 
-  switch (type)
-    {
-    case SK_UDP:
-    case SK_IP:
-      if (s->iface)			/* It's a broadcast socket */
-#ifdef IPV6
-	bug("IPv6 has no broadcasts");
-#else
-	if (setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &one, sizeof(one)) < 0)
-	  ERR("SO_BROADCAST");
-#endif
-      break;
-    case SK_UDP_MC:
-    case SK_IP_MC:
-      {
-#ifdef IPV6
-	/* Fortunately, IPv6 socket interface is recent enough and therefore standardized */
-	ASSERT(s->iface && s->iface->addr);
-	if (ipa_nonzero(s->daddr))
-	  {
-	    int t = s->iface->index;
-	    int zero = 0;
-	    if (setsockopt(fd, SOL_IPV6, IPV6_MULTICAST_HOPS, &s->ttl, sizeof(s->ttl)) < 0)
-	      ERR("IPV6_MULTICAST_HOPS");
-	    if (setsockopt(fd, SOL_IPV6, IPV6_MULTICAST_LOOP, &zero, sizeof(zero)) < 0)
-	      ERR("IPV6_MULTICAST_LOOP");
-	    if (setsockopt(fd, SOL_IPV6, IPV6_MULTICAST_IF, &t, sizeof(t)) < 0)
-	      ERR("IPV6_MULTICAST_IF");
-	  }
-	if (has_src)
-	  {
-	    struct ipv6_mreq mreq;
-	    set_inaddr(&mreq.ipv6mr_multiaddr, s->daddr);
-#ifdef CONFIG_IPV6_GLIBC_20
-	    mreq.ipv6mr_ifindex = s->iface->index;
-#else
-	    mreq.ipv6mr_interface = s->iface->index;
-#endif /* CONFIG_IPV6_GLIBC_20 */
-	    if (setsockopt(fd, SOL_IPV6, IPV6_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
-	      ERR("IPV6_ADD_MEMBERSHIP");
-	  }
-#else
-	/* With IPv4 there are zillions of different socket interface variants. Ugh. */
-	ASSERT(s->iface && s->iface->addr);
-	if (err = sysio_mcast_join(s))
-	  goto bad;
-#endif /* IPV6 */
-      break;
-      }
-    }
   if (has_src)
     {
       int port;
 
-      if (type == SK_IP || type == SK_IP_MC)
+      if (type == SK_IP)
 	port = 0;
       else
 	{
@@ -924,12 +1028,8 @@ sk_open(sock *s)
 	    ERR("SO_REUSEADDR");
 	}
       fill_in_sockaddr(&sa, s->saddr, port);
-#ifdef CONFIG_SKIP_MC_BIND
-      if ((type != SK_UDP_MC) && (type != SK_IP_MC) &&
-	  bind(fd, (struct sockaddr *) &sa, sizeof(sa)) < 0)
-#else
+      fill_in_sockifa(&sa, s->iface);
       if (bind(fd, (struct sockaddr *) &sa, sizeof(sa)) < 0)
-#endif
 	ERR("bind");
     }
   fill_in_sockaddr(&sa, s->daddr, s->dport);
@@ -1050,16 +1150,15 @@ sk_maybe_write(sock *s)
       s->ttx = s->tpos = s->tbuf;
       return 1;
     case SK_UDP:
-    case SK_UDP_MC:
     case SK_IP:
-    case SK_IP_MC:
       {
 	sockaddr sa;
 
 	if (s->tbuf == s->tpos)
 	  return 1;
-	fill_in_sockaddr(&sa, s->faddr, s->fport);
 
+	fill_in_sockaddr(&sa, s->faddr, s->fport);
+	fill_in_sockifa(&sa, s->iface);
 	e = sendto(s->fd, s->tbuf, s->tpos - s->tbuf, 0, (struct sockaddr *) &sa, sizeof(sa));
 	if (e < 0)
 	  {
