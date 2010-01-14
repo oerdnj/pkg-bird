@@ -2,7 +2,7 @@ bird (1.2.0-1~karmic+1) karmic; urgency=low
 
   * Backport for Ubuntu 9.10
 
- -- Ondřej Surý <ondrej@debian.org>  Thu, 14 Jan 2010 17:00:09 +0100
+ -- Ondřej Surý <ondrej@debian.org>  Thu, 14 Jan 2010 17:01:39 +0100
 
 bird (1.2.0-1) unstable; urgency=low
 
