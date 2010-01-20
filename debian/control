@@ -31,5 +31,6 @@ Description: Internet Routing Daemon
  protocols. Bird is easy to use configuration interface and powerful
  route filtering language.
  .
- It supports IPv6 versions of RIPv2 (No v1), BGP and redistribution
- between the protocols with a powerful configuration syntax.
+ It supports IPv6 versions of OSPFv3, RIPv2 (No v1), BGP and
+ redistribution between the protocols with a powerful configuration
+ syntax.
