@@ -1114,11 +1114,12 @@ static void
 rt_show_rte(struct cli *c, byte *ia, rte *e, struct rt_show_data *d, ea_list *tmpa)
 {
   byte via[STD_ADDRESS_P_LENGTH+32], from[STD_ADDRESS_P_LENGTH+6];
-  byte tm[TM_RELTIME_BUFFER_SIZE], info[256];
+  byte tm[TM_DATETIME_BUFFER_SIZE], info[256];
   rta *a = e->attrs;
+  int primary = (e->net->routes == e);
 
   rt_format_via(e, via);
-  tm_format_reltime(tm, e->lastmod);
+  tm_format_datetime(tm, &config->tf_route, e->lastmod);
   if (ipa_nonzero(a->from) && !ipa_equal(a->from, a->gw))
     bsprintf(from, " from %I", a->from);
   else
@@ -1136,7 +1137,8 @@ rt_show_rte(struct cli *c, byte *ia, rte *e, struct rt_show_data *d, ea_list *tm
     a->proto->proto->get_route_info(e, info, tmpa);
   else
     bsprintf(info, " (%d)", e->pref);
-  cli_printf(c, -1007, "%-18s %s [%s %s%s]%s", ia, via, a->proto->name, tm, from, info);
+  cli_printf(c, -1007, "%-18s %s [%s %s%s]%s%s", ia, via, a->proto->name,
+	     tm, from, primary ? " *" : "", info);
   if (d->verbose)
     rta_show(c, a, tmpa);
 }

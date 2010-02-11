@@ -69,11 +69,14 @@ ospf_open_socket(struct ospf_iface *ifa, int mc)
   ipsk->dport = OSPF_PROTO;
 
 #ifdef OSPFv2
-  /* FIXME - why there is IPA_NONE on multicast sockets ? */
-  if (mc)
-    ipsk->saddr = IPA_NONE;
-  else
-    ipsk->saddr = ifa->iface->addr->ip;
+  /*
+   * In Linux IPv4, binding a raw socket to an IP address of an iface causes
+   * that the socket does not receive multicast packets, as they have
+   * different (multicast) destination IP address.
+   *
+   * We want such filter in the vlink (non-mc) socket.
+   */
+  ipsk->saddr = mc ? IPA_NONE : ifa->iface->addr->ip;
 #else /* OSPFv3 */
   ipsk->saddr = ifa->lladdr;
 #endif
@@ -352,6 +355,9 @@ ospf_open_mc_socket(struct ospf_iface *ifa)
 u8
 ospf_iface_clasify(struct iface * ifa)
 {
+  if (ifa->addr->flags & IA_UNNUMBERED)
+    return OSPF_IT_PTP;
+
   if ((ifa->flags & (IF_MULTIACCESS | IF_MULTICAST)) ==
       (IF_MULTIACCESS | IF_MULTICAST))
     return OSPF_IT_BCAST;
@@ -454,6 +460,16 @@ ospf_iface_new(struct proto_ospf *po, struct iface *iface,
     ifa->type = ospf_iface_clasify(ifa->iface);
   else
     ifa->type = ip->type;
+
+#ifdef OSPFv2
+  if ((ifa->type != OSPF_IT_PTP) && (ifa->type != OSPF_IT_VLINK) &&
+      (ifa->iface->addr->flags & IA_UNNUMBERED))
+  {
+    log(L_WARN "%s: Missing proper IP prefix on interface %s, forcing point-to-point mode",
+	p->name,  iface->name);
+    ifa->type = OSPF_IT_PTP;
+  }
+#endif
 
   init_list(&ifa->neigh_list);
   init_list(&ifa->nbma_list);

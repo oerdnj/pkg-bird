@@ -271,6 +271,31 @@ protocol rip {
 	listen to IPv6 connections only. This is needed if you want to
 	run both bird and bird6 on the same port.
 
+	<tag>timeformat route|protocol|base|log "<m/format1/" [<m/limit> "<m/format2/"]</tag>
+	This option allows to specify a format of date/time used by
+	BIRD.  The first argument specifies for which purpose such
+	format is used. <cf/route/ is a format used in 'show route'
+	command output, <cf/protocol/ is used in 'show protocols'
+	command output, <cf/base/ is used for other commands and
+	<cf/log/ is used in a log file.
+
+	"<m/format1/" is a format string using <i/strftime(3)/
+	notation (see <i/man strftime/ for details). <m/limit> and
+	"<m/format2/" allow to specify the second format string for
+	times in past deeper than <m/limit/ seconds. There are two
+	shorthands: <cf/iso long/ is a ISO 8601 date/time format
+	(YYYY-MM-DD hh:mm:ss) that can be also specified using <cf/"%F
+	%T"/. <cf/iso short/ is a variant of ISO 8601 that uses just
+	the time format (hh:mm:ss) for near times (up to 20 hours in
+	the past) and the date format (YYYY-MM-DD) for far times. This
+	is a shorthand for <cf/"%T" 72000 "%F"/.
+
+	By default, BIRD uses an short, ad-hoc format for <cf/route/
+	and <cf/protocol/ times, and a <cf/iso long/ similar format
+	(DD-MM-YYYY hh:mm:ss) for <cf/base/ and <cf/log/. These
+	defaults are here for a compatibility with older versions
+	and might change in the future.
+
 	<tag>table <m/name/</tag> Create a new routing table. The default
 	routing table is created implicitly, other routing tables have
 	to be added by this command.
@@ -996,6 +1021,18 @@ for each neighbor using the following configuration parameters:
 	capability and accepts such requests. Even when disabled, BIRD
 	can send route refresh requests. Default: on.
 
+	<tag>interpret communities <m/switch/</tag> RFC 1997 demands
+	that BGP speaker should process well-known communities like
+	no-export (65535, 65281) or no-advertise (65535, 65282). For
+	example, received route carrying a no-adverise community
+	should not be advertised to any of its neighbors. If this
+	option is enabled (which is by default), BIRD has such
+	behavior automatically (it is evaluated when a route is
+	exported to the protocol just before the export filter).
+	Otherwise, this integrated processing of well-known
+	communities is disabled. In that case, similar behavior can be
+	implemented in the export filter.  Default: on.
+
 	<tag>enable as4 <m/switch/</tag> BGP protocol was designed to use 2B AS numbers
 	and was extended later to allow 4B AS number. BIRD supports 4B AS extension,
 	but by disabling this option it can be persuaded not to advertise it and
@@ -1541,7 +1578,7 @@ protocol ospf &lt;name&gt; {
 
 <sect1>Attributes
 
-<p>OSPF defines three route attributes. Each internal route has a <cf/metric/
+<p>OSPF defines four route attributes. Each internal route has a <cf/metric/.
 Metric is ranging from 1 to infinity (65535).
 External routes use <cf/metric type 1/ or <cf/metric type 2/.
 A <cf/metric of type 1/ is comparable with internal <cf/metric/, a
@@ -1551,6 +1588,8 @@ If you specify both metrics only metric1 is used.
 Each external route can also carry a <cf/tag/ which is a 32-bit
 integer which is used when exporting routes to other protocols;
 otherwise, it doesn't affect routing inside the OSPF domain at all.
+The fourth attribute is a <cf/router_id/ of the router advertising
+that route/network. This attribute is read-only.
 Default is <cf/metric of type 2 = 10000/ and <cf/tag = 0/.
 
 <sect1>Example

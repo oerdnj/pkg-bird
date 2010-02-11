@@ -1,8 +1,16 @@
-bird (1.2.0-1~bpo40+1) etch-backports; urgency=low
+bird (1.2.1-1~bpo40+1) etch-backports; urgency=low
 
   * Backport for Debian 4.0 etch
 
  -- Ondřej Surý <ondrej@debian.org>  Mon, 21 Dec 2009 09:02:18 +0100
+
+bird (1.2.1-1) UNRELEASED; urgency=low
+
+  * New Upstream Version
+  * Add debian/README.source with notes about quilt
+  * Add OSPFv3 to description
+
+ -- Ondřej Surý <ondrej@debian.org>  Thu, 11 Feb 2010 10:07:23 +0100
 
 bird (1.2.0-1) unstable; urgency=low
 
