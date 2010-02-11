@@ -1,0 +1,8 @@
+bird (1.2.1-1~bpo40+1) etch-backports; urgency=low
+
+  * This is last release of bird for Debian 4.0 (etch)! Please update to
+    Debian 5.0 (lenny).  Security support for Debian 4.0 has ended on the
+    January 31st 2010, and so we decided to cease support for it as well.
+  * For more information see: http://www.debian.org/News/2010/20100121
+
+ -- Ondřej Surý <ondrej@debian.org>  Thu, 11 Feb 2010 10:41:42 +0100
