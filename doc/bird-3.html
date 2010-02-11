@@ -105,6 +105,28 @@ all addresses (0.0.0.0) and port 179. In IPv6 mode, option
 listen to IPv6 connections only. This is needed if you want to
 run both bird and bird6 on the same port.
 <P>
+<DT><CODE>timeformat route|protocol|base|log "<I>format1</I>" [<I>limit> "<I>format2</I>"]</I></CODE><DD><P>This option allows to specify a format of date/time used by
+BIRD.  The first argument specifies for which purpose such
+format is used. <CODE>route</CODE> is a format used in 'show route'
+command output, <CODE>protocol</CODE> is used in 'show protocols'
+command output, <CODE>base</CODE> is used for other commands and
+<CODE>log</CODE> is used in a log file.
+<P>"<I>format1</I>" is a format string using strftime(3)
+notation (see man strftime for details). <I>limit> and
+"<I>format2</I>" allow to specify the second format string for
+times in past deeper than <I>limit</I> seconds. There are two
+shorthands: <CODE>iso long</CODE> is a ISO 8601 date</I>time format
+(YYYY-MM-DD hh:mm:ss) that can be also specified using <CODE>"%F
+%T"</CODE>. <CODE>iso short</CODE> is a variant of ISO 8601 that uses just
+the time format (hh:mm:ss) for near times (up to 20 hours in
+the past) and the date format (YYYY-MM-DD) for far times. This
+is a shorthand for <CODE>"%T" 72000 "%F"</CODE>.
+<P>By default, BIRD uses an short, ad-hoc format for <CODE>route</CODE>
+and <CODE>protocol</CODE> times, and a <CODE>iso long</CODE> similar format
+(DD-MM-YYYY hh:mm:ss) for <CODE>base</CODE> and <CODE>log</CODE>. These
+defaults are here for a compatibility with older versions
+and might change in the future.
+<P>
 <DT><CODE>table <I>name</I></CODE><DD><P>Create a new routing table. The default
 routing table is created implicitly, other routing tables have
 to be added by this command.
