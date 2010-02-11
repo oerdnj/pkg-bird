@@ -1,3 +1,135 @@
+commit fa5a99c766dde2a4ac3d44596ff5396a0efd1cc8
+Author: Ondrej Filip <feela@majklik.network.cz>
+Date:   Wed Feb 10 23:09:23 2010 +0100
+
+    NEWS version update.
+
+commit 75f8861898d53f43cb23dbba9c776bce223c18c8
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Wed Feb 10 16:18:17 2010 +0100
+
+    NEWS and version update.
+
+commit fae9be7782a161bdf93c83884d62941a34cbe518
+Merge: 7d19666... 0efd646...
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Wed Feb 10 14:59:26 2010 +0100
+
+    Merge commit 'origin/master' into new
+
+commit 7d1966689f3f748d8bfa36eef64ced6a750ecb47
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Wed Feb 10 14:57:16 2010 +0100
+
+    RTF_CLONING is removed in FreeBSD 8.
+
+commit 0efd646278987df023586d85817a848c2bb39a1d
+Author: Ondrej Filip <feela@majklik.network.cz>
+Date:   Wed Feb 10 12:30:14 2010 +0100
+
+    Define symbols as text between ''.
+
+commit c27b2449d1f57e780974ed13fbd572a48e2a3602
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Mon Feb 8 16:01:03 2010 +0100
+
+    Shows source (Router ID) for OSPF routes and adds such attribute.
+    
+    A sad thing is that we does not have a 'router_id' filter type,
+    so it must be given as decimal number in filters.
+
+commit 5a56f27cd00c2cad661aed9b54696699e800883c
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Mon Feb 8 12:42:09 2010 +0100
+
+    Adds asterisk to the primary route in 'show route' cmd.
+    
+    And also fixes a minor bug.
+
+commit aa80826e4af4e6e0a6de5604ab5ce7991f2a8b4e
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Sun Feb 7 09:49:34 2010 +0100
+
+    Unnumbered OSPF interfaces should be always in the point-to-point mode.
+
+commit 76b53a4e207696c535a45f4358a8e047ca936e45
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Sat Feb 6 22:57:51 2010 +0100
+
+    Adds some log messages related to configure.
+    
+    Also fixes a bug in the previous patch.
+
+commit ebae4770c949de41c64c9efbeaaef44adfb25790
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Sat Feb 6 19:19:09 2010 +0100
+
+    Modifies configure to just reload protocols when filters change.
+    
+    Before this change, protocols were restarted in that case.
+
+commit c37e78510f2ac4d9bb4c44eddf33352eda72fd0f
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Wed Feb 3 00:19:24 2010 +0100
+
+    Makes date/time formats configurable.
+
+commit 44f26560ec9f108039e6736d6de929f899bf20ea
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Tue Feb 2 10:14:21 2010 +0100
+
+    Workaround for some broken BGP implementations that skip initial KEEPALIVE.
+
+commit 5f47c4c11ed8da3415c4c8c247bf52ab6a48255d
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Tue Feb 2 00:03:46 2010 +0100
+
+    Changes right-recursion to left-recursion in a filter grammar.
+    
+    Because we don't want to have a limit on a function/filter length.
+
+commit 1a7a4e59a22f903a0be791f229e86ab881593851
+Merge: 4167702... 1960d20...
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Thu Jan 28 16:00:16 2010 +0100
+
+    Merge commit 'origin/master' into new
+
+commit 41677025ee67fcccd34493f9b205037dd68811c9
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Thu Jan 28 15:59:18 2010 +0100
+
+    Changes 'ignore communities' to 'interpret communities'.
+
+commit 1960d20350c5191b089f0a233d99969a0ff23ef6
+Author: Ondrej Filip <feela@majklik.network.cz>
+Date:   Wed Jan 27 23:45:36 2010 +0100
+
+    Priority for '||' and '&&' fixed.
+
+commit 7515dafc006f8b71bc15aa7ed9749c7d4fb00153
+Author: Ondrej Filip <feela@majklik.network.cz>
+Date:   Wed Jan 27 22:26:45 2010 +0100
+
+    Allow multiple || and && statements.
+
+commit 6cb8f742f1adf99881334b8ae21c398d98571aa1
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Wed Jan 27 17:22:57 2010 +0100
+
+    Better handling of well-known communities.
+    
+    Process well-known communities before the export filter (old behavior is
+    to process these attributes after, which does not allow to send route
+    with such community) and just for routes received from other BGP
+    protocols. Also fixes a bug in next_hop check.
+
+commit a3062085827db3115961eacd9d945ac202728174
+Author: Ondrej Zajicek <santiago@crfreenet.org>
+Date:   Wed Jan 13 14:53:33 2010 +0100
+
+    Comment update.
+
 commit 974363c172e026b00be5f78ec585dda1e402b6f6
 Merge: 99f5fc1... 844e0f6...
 Author: Ondrej Zajicek <santiago@crfreenet.org>
