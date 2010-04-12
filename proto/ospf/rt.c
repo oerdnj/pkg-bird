@@ -146,6 +146,45 @@ ri_install(struct proto_ospf *po, ip_addr prefix, int pxlen, int dest,
   }
 }
 
+#ifdef OSPFv2
+
+static struct ospf_iface *
+find_stub_src(struct ospf_area *oa, ip_addr px, int pxlen)
+{
+  struct ospf_iface *iff;
+
+  WALK_LIST(iff, oa->po->iface_list)
+    if ((iff->type != OSPF_IT_VLINK) &&
+	(iff->oa == oa) &&
+	ipa_equal(iff->addr->prefix, px) && 
+	(iff->addr->pxlen == pxlen))
+      return iff;
+
+  return NULL;
+}
+
+#else /* OSPFv3 */
+
+static struct ospf_iface *
+find_stub_src(struct ospf_area *oa, ip_addr px, int pxlen)
+{
+  struct ospf_iface *iff;
+  struct ifa *a;
+
+  WALK_LIST(iff, oa->po->iface_list)
+    if ((iff->type != OSPF_IT_VLINK) &&
+	(iff->oa == oa))
+      WALK_LIST(a, iff->iface->addrs)
+	if (ipa_equal(a->prefix, px) && 
+	    (a->pxlen == pxlen) &&
+	    !(a->flags & IA_SECONDARY))
+	  return iff;
+
+  return NULL;
+}
+
+#endif
+
 static void
 add_network(struct ospf_area *oa, ip_addr px, int pxlen, int metric, struct top_hash_entry *en)
 {
@@ -161,7 +200,21 @@ add_network(struct ospf_area *oa, ip_addr px, int pxlen, int metric, struct top_
   nf.ifa = en->nhi;
   nf.rid = en->lsa.rt;
 
-  /* FIXME check nf.ifa on stubs */
+  if (en == oa->rt)
+  {
+    /* 
+     * Local stub networks does not have proper iface in en->nhi
+     * (because they all have common top_hash_entry en).
+     * We have to find iface responsible for that stub network.
+     * Some stubnets does not have any iface. Ignore them.
+     */
+
+    nf.ifa = find_stub_src(oa, px, pxlen);
+
+    if (!nf.ifa)
+      return;
+  }
+
   ri_install(oa->po, px, pxlen, ORT_NET, &nf, NULL);
 }
 
@@ -170,7 +223,7 @@ static void
 process_prefixes(struct ospf_area *oa)
 {
   struct proto_ospf *po = oa->po;
-  struct proto *p = &po->proto;
+  // struct proto *p = &po->proto;
   struct top_hash_entry *en, *src;
   struct ospf_lsa_prefix *px;
   ip_addr pxa;
@@ -226,9 +279,8 @@ process_prefixes(struct ospf_area *oa)
 static void
 ospf_rt_spfa_rtlinks(struct ospf_area *oa, struct top_hash_entry *act, struct top_hash_entry *en)
 {
-  struct proto *p = &oa->po->proto;
+  // struct proto *p = &oa->po->proto;
   struct proto_ospf *po = oa->po;
-  orta nf;
   u32 i;
 
   struct ospf_lsa_rt *rt = en->lsa_body;
@@ -244,43 +296,10 @@ ospf_rt_spfa_rtlinks(struct ospf_area *oa, struct top_hash_entry *act, struct to
 	{
 #ifdef OSPFv2
 	case LSART_STUB:
-	  /*
-	   * This violates rfc2328! But it is mostly harmless.
-	   */
-	  DBG("\n");
-
-	  nf.type = RTS_OSPF;
-	  nf.options = 0;
-	  nf.metric1 = act->dist + rtl->metric;
-	  nf.metric2 = LSINFINITY;
-	  nf.tag = 0;
-	  nf.oa = oa;
-	  nf.ar = act;
-	  nf.nh = act->nh;
-	  nf.ifa = act->nhi;
-	  nf.rid = act->lsa.rt;
-
-	  if (act == oa->rt)
-	    {
-	      struct ospf_iface *iff;
-
-	      WALK_LIST(iff, po->iface_list)	/* Try to find corresponding interface */
-		{
-		  if (iff->iface && (iff->type != OSPF_IT_VLINK) &&
-		      (rtl->id == (ipa_to_u32(ipa_mkmask(iff->iface->addr->pxlen))
-				   & ipa_to_u32(iff->iface->addr->prefix))))	/* No VLINK and IP must match */
-		    {
-		      nf.ifa = iff;
-		      break;
-		    }
-		}
-	    }
-
-	  if (!nf.ifa)
-	    continue;
-
-	  ri_install(po, ipa_from_u32(rtl->id),
-		     ipa_mklen(ipa_from_u32(rtl->data)), ORT_NET, &nf, NULL);
+	  /* This violates RFC 2328! But it is mostly harmless. */
+	  add_network(oa, ipa_from_u32(rtl->id),
+		      ipa_mklen(ipa_from_u32(rtl->data)),
+		      act->dist + rtl->metric, act);
 	  break;
 #endif
 
@@ -291,21 +310,18 @@ ospf_rt_spfa_rtlinks(struct ospf_area *oa, struct top_hash_entry *act, struct to
 #else /* OSPFv3 */
 	  tmp = ospf_hash_find(po->gr, oa->areaid, rtl->nif, rtl->id, LSA_T_NET);
 #endif
-	  if (tmp == NULL)
-	    DBG("Not found!\n");
-	  else
-	    DBG("Found. :-)\n");
 	  break;
 
 	case LSART_VLNK:
 	case LSART_PTP:
 	  tmp = ospf_hash_find_rt(po->gr, oa->areaid, rtl->id);
-	  DBG("PTP found.\n");
 	  break;
+
 	default:
 	  log("Unknown link type in router lsa. (rid = %R)", act->lsa.id);
 	  break;
 	}
+
       if (tmp)
 	DBG("Going to add cand, Mydist: %u, Req: %u\n",
 	    tmp->dist, act->dist + rtl->metric);
@@ -423,11 +439,14 @@ ospf_rt_spfa(struct ospf_area *oa)
       if ((tmp = ospf_hash_find_rt(po->gr, oa->areaid, iface->vid)) &&
 	  (!ipa_equal(tmp->lb, IPA_NONE)))
       {
-        if ((iface->state != OSPF_IS_PTP) || (iface->iface != tmp->nhi->iface) || (!ipa_equal(iface->vip, tmp->lb)))
+        if ((iface->state != OSPF_IS_PTP) || (iface->vifa != tmp->nhi) || (!ipa_equal(iface->vip, tmp->lb)))
         {
           OSPF_TRACE(D_EVENTS, "Vlink peer %R found", tmp->lsa.id);
           ospf_iface_sm(iface, ISM_DOWN);
+	  iface->vifa = tmp->nhi;
           iface->iface = tmp->nhi->iface;
+	  iface->addr = tmp->nhi->addr;
+	  iface->sk = tmp->nhi->sk;
           iface->vip = tmp->lb;
           ospf_iface_sm(iface, ISM_UP);
         }
@@ -437,7 +456,7 @@ ospf_rt_spfa(struct ospf_area *oa)
         if (iface->state > OSPF_IS_DOWN)
         {
           OSPF_TRACE(D_EVENTS, "Vlink peer %R lost", iface->vid);
-          ospf_iface_sm(iface, ISM_DOWN);
+	  ospf_iface_sm(iface, ISM_DOWN);
         }
       }
     }
@@ -519,7 +538,7 @@ link_back(struct ospf_area *oa, struct top_hash_entry *en, struct top_hash_entry
 static void
 ospf_rt_sum_tr(struct ospf_area *oa)
 {
-  struct proto *p = &oa->po->proto;
+  // struct proto *p = &oa->po->proto;
   struct proto_ospf *po = oa->po;
   struct ospf_area *bb = po->backbone;
   ip_addr ip, abrip;
@@ -569,9 +588,9 @@ ospf_rt_sum_tr(struct ospf_area *oa)
       metric = ls->metric & METRIC_MASK;
       options = 0;
       type = ORT_NET;
-      re = (ort *) fib_find(&po->rtf, &ip, pxlen);
+      re = fib_find(&po->rtf, &ip, pxlen);
     }
-    else if (en->lsa.type == LSA_T_SUM_RT)
+    else // en->lsa.type == LSA_T_SUM_RT
     {
 #ifdef OSPFv2
       struct ospf_lsa_sum *ls = en->lsa_body;
@@ -588,7 +607,7 @@ ospf_rt_sum_tr(struct ospf_area *oa)
       metric = ls->metric & METRIC_MASK;
       options |= ORTA_ASBR;
       type = ORT_ROUTER;
-      re = (ort *) fib_find(&bb->rtr, &ip, pxlen);
+      re = fib_find(&bb->rtr, &ip, pxlen);
     }
 
     /* 16.3 (1b) */ 
@@ -596,14 +615,14 @@ ospf_rt_sum_tr(struct ospf_area *oa)
       continue; 
 
     /* 16.3 (3) */
-    if (!re) continue;
+    if (!re || !re->n.type) continue;
     if (re->n.oa->areaid != 0) continue;
     if ((re->n.type != RTS_OSPF) && (re->n.type != RTS_OSPF_IA)) continue;
 
     /* 16.3. (4) */
     abrip = ipa_from_rid(en->lsa.rt);
     abr = fib_find(&oa->rtr, &abrip, MAX_PREFIX_LENGTH);
-    if (!abr) continue;
+    if (!abr || !abr->n.type) continue;
 
     nf.type = re->n.type;
     nf.options = options;
@@ -711,7 +730,9 @@ ospf_rt_sum(struct ospf_area *oa)
 
     /* Page 169 (4) */
     abrip = ipa_from_rid(en->lsa.rt);
-    if (!(abr = (ort *) fib_find(&oa->rtr, &abrip, MAX_PREFIX_LENGTH))) continue;
+
+    abr = (ort *) fib_find(&oa->rtr, &abrip, MAX_PREFIX_LENGTH);
+    if (!abr || !abr->n.type) continue;
     if (abr->n.metric1 == LSINFINITY) continue;
     if (!(abr->n.options & ORTA_ABR)) continue;
 
@@ -901,7 +922,7 @@ ospf_ext_spf(struct proto_ospf *po)
     WALK_LIST(atmp, po->area_list)
     {
       nfh = fib_find(&atmp->rtr, &rtid, MAX_PREFIX_LENGTH);
-      if (nfh == NULL) continue;
+      if (!nfh || !nfh->n.type) continue;    
       if (nf1 == NULL) nf1 = nfh;
       else if (ri_better(po, &nfh->n, NULL, &nf1->n, NULL, po->rfc1583)) nf1 = nfh;
     }
@@ -1077,8 +1098,8 @@ static int
 calc_next_hop(struct ospf_area *oa, struct top_hash_entry *en,
 	      struct top_hash_entry *par)
 {
+  // struct proto *p = &oa->po->proto;
   struct ospf_neighbor *neigh;
-  struct proto *p = &oa->po->proto;
   struct proto_ospf *po = oa->po;
   struct ospf_iface *ifa;
 

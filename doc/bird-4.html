@@ -15,16 +15,19 @@
 <H2><A NAME="s4">4.</A> <A HREF="bird.html#toc4">Remote control</A></H2>
 
 <P>You can use the command-line client birdc to talk with
-a running BIRD. Communication is done using a bird.ctl UNIX domain
-socket (unless changed with the <CODE>-s</CODE> option given to both the server and
-the client). The commands can perform simple actions such as enabling/disabling
-of protocols, telling BIRD to show various information, telling it to
-show routing table filtered by filter, or asking BIRD to
-reconfigure. Press <CODE>?</CODE> at any time to get online help. Option
+a running BIRD. Communication is done using a bird.ctl UNIX
+domain socket (unless changed with the <CODE>-s</CODE> option given to both
+the server and the client). The commands can perform simple actions
+such as enabling/disabling of protocols, telling BIRD to show various
+information, telling it to show routing table filtered by filter, or
+asking BIRD to reconfigure. Press <CODE>?</CODE> at any time to get online
+help. Option <CODE>-r</CODE> can be used to enable a restricted mode of BIRD
+client, which allows just read-only commands (<CODE>show ...</CODE>). Option
 <CODE>-v</CODE> can be passed to the client, to make it dump numeric return
-codes along with the messages. You do not necessarily need to use birdc to talk to BIRD, your
-own applications could do that, too -- the format of communication between
-BIRD and birdc is stable (see the programmer's documentation).
+codes along with the messages. You do not necessarily need to use
+birdc to talk to BIRD, your own applications could do that, too
+-- the format of communication between BIRD and birdc is stable
+(see the programmer's documentation).
 <P>Many commands have the <I>name</I> of the protocol instance as an argument.
 This argument can be omitted if there exists only a single instance.
 <P>

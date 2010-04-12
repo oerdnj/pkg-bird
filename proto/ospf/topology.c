@@ -205,7 +205,7 @@ originate_rt_lsa_body(struct ospf_area *oa, u16 *length)
 
   WALK_LIST(ifa, po->iface_list)
   {
-    int master = 0;
+    int net_lsa = 0;
 
     if ((ifa->type == OSPF_IT_VLINK) && (ifa->voa == oa) &&
 	(!EMPTY_LIST(ifa->neigh_list)))
@@ -230,12 +230,11 @@ originate_rt_lsa_body(struct ospf_area *oa, u16 *length)
 	  ln = lsab_alloc(po, sizeof(struct ospf_lsa_rt_link));
 	  ln->type = LSART_PTP;
 	  ln->id = neigh->rid;
-	  ln->data = (ifa->iface->addr->flags & IA_UNNUMBERED) ?
-	    ifa->iface->index : ipa_to_u32(ifa->iface->addr->ip);
+	  ln->data = (ifa->addr->flags & IA_UNNUMBERED) ?
+	    ifa->iface->index : ipa_to_u32(ifa->addr->ip);
 	  ln->metric = ifa->cost;
 	  ln->padding = 0;
 	  i++;
-	  master = 1;
 	}
 	break;
 
@@ -246,11 +245,11 @@ originate_rt_lsa_body(struct ospf_area *oa, u16 *length)
 	    ln = lsab_alloc(po, sizeof(struct ospf_lsa_rt_link));
 	    ln->type = LSART_NET;
 	    ln->id = ipa_to_u32(ifa->drip);
-	    ln->data = ipa_to_u32(ifa->iface->addr->ip);
+	    ln->data = ipa_to_u32(ifa->addr->ip);
 	    ln->metric = ifa->cost;
 	    ln->padding = 0;
 	    i++;
-	    master = 1;
+	    net_lsa = 1;
 	  }
 	break;
 
@@ -261,11 +260,10 @@ originate_rt_lsa_body(struct ospf_area *oa, u16 *length)
 	  ln = lsab_alloc(po, sizeof(struct ospf_lsa_rt_link));
 	  ln->type = LSART_VLNK;
 	  ln->id = neigh->rid;
-	  ln->data = ipa_to_u32(ifa->iface->addr->ip);
+	  ln->data = ipa_to_u32(ifa->addr->ip);
 	  ln->metric = ifa->cost;
 	  ln->padding = 0;
 	  i++;
-	  master = 1;
         }
         break;
 
@@ -274,25 +272,20 @@ originate_rt_lsa_body(struct ospf_area *oa, u16 *length)
         break;
       }
 
-    /* Now we will originate stub areas for interfaces addresses */
-    struct ifa *a;
-    WALK_LIST(a, ifa->iface->addrs)
-      {
-	if (((a == ifa->iface->addr) && master) ||
-	    (a->flags & IA_SECONDARY) ||
-	    (a->flags & IA_UNNUMBERED) ||
-	    configured_stubnet(oa, a))
-	  continue;
+    /* Now we will originate stub area if there is no primary */
+    if (net_lsa ||
+	(ifa->type == OSPF_IT_VLINK) ||
+	(ifa->addr->flags & IA_UNNUMBERED) ||
+	configured_stubnet(oa, ifa->addr))
+      continue;
 
-
-	ln = lsab_alloc(po, sizeof(struct ospf_lsa_rt_link));
-	ln->type = LSART_STUB;
-	ln->id = ipa_to_u32(a->prefix);
-	ln->data = ipa_to_u32(ipa_mkmask(a->pxlen));
-	ln->metric = ifa->cost;
-	ln->padding = 0;
-	i++;
-      }
+    ln = lsab_alloc(po, sizeof(struct ospf_lsa_rt_link));
+    ln->type = LSART_STUB;
+    ln->id = ipa_to_u32(ifa->addr->prefix);
+    ln->data = ipa_to_u32(ipa_mkmask(ifa->addr->pxlen));
+    ln->metric = ifa->cost;
+    ln->padding = 0;
+    i++;
   }
 
   struct ospf_stubnet_config *sn;
@@ -483,7 +476,7 @@ originate_net_lsa_body(struct ospf_iface *ifa, u16 *length,
 		 + nodes * sizeof(u32));
 
 #ifdef OSPFv2
-  net->netmask = ipa_mkmask(ifa->iface->addr->pxlen);
+  net->netmask = ipa_mkmask(ifa->addr->pxlen);
 #endif
 
 #ifdef OSPFv3
@@ -547,7 +540,7 @@ originate_net_lsa(struct ospf_iface *ifa)
 
 #ifdef OSPFv2
   lsa.options = ifa->oa->options;
-  lsa.id = ipa_to_u32(ifa->iface->addr->ip);
+  lsa.id = ipa_to_u32(ifa->addr->ip);
 #else /* OSPFv3 */
   lsa.id = ifa->iface->index;
 #endif
@@ -744,17 +737,18 @@ originate_sum_net_lsa(struct ospf_area *oa, struct fib_node *fn, int metric)
 }
 
 void
-originate_sum_rt_lsa(struct ospf_area *oa, struct fib_node *fn, int metric, u32 options)
+originate_sum_rt_lsa(struct ospf_area *oa, struct fib_node *fn, int metric, u32 options UNUSED)
 {
   struct proto_ospf *po = oa->po;
   struct proto *p = &po->proto;
   struct top_hash_entry *en;
-  u32 dom = oa->areaid;  
+  u32 dom = oa->areaid;
+  u32 rid = ipa_to_rid(fn->prefix);
   struct ospf_lsa_header lsa;
   void *body;
 
   OSPF_TRACE(D_EVENTS, "Originating rt-summary-LSA for %R (metric %d)",
-	     lsa.id, metric);
+	     rid, metric);
 
   lsa.age = 0;
 #ifdef OSPFv2
@@ -762,7 +756,7 @@ originate_sum_rt_lsa(struct ospf_area *oa, struct fib_node *fn, int metric, u32 
 #endif
   lsa.type = LSA_T_SUM_RT;
   /* In OSPFv3, LSA ID is meaningless, but we still use Router ID of ASBR */
-  lsa.id = ipa_to_rid(fn->prefix);
+  lsa.id = rid;
   lsa.rt = po->router_id;
   lsa.sn = LSA_INITSEQNO;
 
@@ -899,8 +893,8 @@ originate_ext_lsa_body(net *n, rte *e, u16 *length, struct proto_ospf *po,
   u32 tag = ea_get_int(attrs, EA_OSPF_TAG, 0);
   int gw = 0;
   int size = sizeof(struct ospf_lsa_ext);
-  u32 *buf;
 
+  // FIXME check for gw should be per ifa, not per iface
   if ((e->attrs->dest == RTD_ROUTER) &&
       !ipa_equal(e->attrs->gw, IPA_NONE) &&
       !ipa_has_link_scope(e->attrs->gw) &&
@@ -927,7 +921,7 @@ originate_ext_lsa_body(net *n, rte *e, u16 *length, struct proto_ospf *po,
   ext->fwaddr = gw ? e->attrs->gw : IPA_NONE;
   ext->tag = tag;
 #else /* OSPFv3 */
-  buf = ext->rest;
+  u32 *buf = ext->rest;
   buf = put_ipv6_prefix(buf, n->n.prefix, n->n.pxlen, 0, 0);
 
   if (gw)
@@ -1017,7 +1011,6 @@ flush_ext_lsa(net *n, struct proto_ospf *po)
 {
   struct proto *p = &po->proto;
   struct fib_node *fn = &n->n;
-  struct ospf_area *oa;
   struct top_hash_entry *en;
 
   OSPF_TRACE(D_EVENTS, "Flushing AS-external-LSA for %I/%d",
@@ -1052,7 +1045,7 @@ originate_link_lsa_body(struct ospf_iface *ifa, u16 *length)
   ASSERT(po->lsab_used == 0);
   ll = lsab_allocz(po, sizeof(struct ospf_lsa_link));
   ll->options = ifa->oa->options | (ifa->priority << 24);
-  ll->lladdr = ifa->lladdr;
+  ll->lladdr = ifa->addr->ip;
   ll = NULL; /* buffer might be reallocated later */
 
   struct ifa *a;
@@ -1651,10 +1644,11 @@ ospf_hash_delete(struct top_graph *f, struct top_hash_entry *e)
   bug("ospf_hash_delete() called for invalid node");
 }
 
+/*
 static void
 ospf_dump_lsa(struct top_hash_entry *he, struct proto *p)
 {
-  /*
+
   struct ospf_lsa_rt *rt = NULL;
   struct ospf_lsa_rt_link *rr = NULL;
   struct ospf_lsa_net *ln = NULL;
@@ -1688,7 +1682,6 @@ ospf_dump_lsa(struct top_hash_entry *he, struct proto *p)
     default:
       break;
     }
-  */
 }
 
 void
@@ -1704,6 +1697,7 @@ ospf_top_dump(struct top_graph *f, struct proto *p)
       ospf_dump_lsa(e, p);
   }
 }
+*/
 
 /* This is very inefficient, please don't call it often */
 

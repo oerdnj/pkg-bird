@@ -1,8 +1,14 @@
-bird (1.2.1-1~bpo40+1) etch; urgency=low
+bird (1.2.2-1~bpo40+1) etch; urgency=low
 
   * Backport for Debian 4.0 etch
 
  -- Ondřej Surý <ondrej@debian.org>  Mon, 21 Dec 2009 09:02:18 +0100
+
+bird (1.2.2-1) unstable; urgency=low
+
+  * Imported Upstream version 1.2.2
+
+ -- Ondřej Surý <ondrej@debian.org>  Sat, 10 Apr 2010 17:52:21 +0200
 
 bird (1.2.1-1) unstable; urgency=low
 

@@ -440,7 +440,6 @@ void
 bdr_election(struct ospf_iface *ifa)
 {
   struct proto_ospf *po = ifa->oa->po;
-  struct proto *p = &po->proto;
   u32 myid = po->router_id;
   struct ospf_neighbor *neigh, *ndr, *nbdr, me;
   int doadj;
@@ -450,13 +449,12 @@ bdr_election(struct ospf_iface *ifa)
   me.state = NEIGHBOR_2WAY;
   me.rid = myid;
   me.priority = ifa->priority;
+  me.ip = ifa->addr->ip;
 
 #ifdef OSPFv2
-  me.ip = ifa->iface->addr->ip;
   me.dr = ipa_to_u32(ifa->drip);
   me.bdr = ipa_to_u32(ifa->bdrip);
 #else /* OSPFv3 */
-  me.ip = ifa->lladdr;
   me.dr = ifa->drid;
   me.bdr = ifa->bdrid;
   me.iface_id = ifa->iface->index;
@@ -632,7 +630,7 @@ static void
 rxmt_timer_hook(timer * timer)
 {
   struct ospf_neighbor *n = (struct ospf_neighbor *) timer->data;
-  struct proto *p = &n->ifa->oa->po->proto;
+  // struct proto *p = &n->ifa->oa->po->proto;
   struct top_hash_entry *en;
 
   DBG("%s: RXMT timer fired on interface %s for neigh: %I.\n",

@@ -269,8 +269,8 @@ ospf_lsupd_flood(struct proto_ospf *po,
       struct ospf_packet *op;
       struct ospf_lsa_header *lh;
 
-      pk = (struct ospf_lsupd_packet *) ifa->sk->tbuf;
-      op = (struct ospf_packet *) ifa->sk->tbuf;
+      pk = ospf_tx_buffer(ifa);
+      op = &pk->ospf_packet;
 
       ospf_pkt_fill_hdr(ifa, pk, LSUPD_P);
       pk->lsano = htonl(1);
@@ -290,8 +290,7 @@ ospf_lsupd_flood(struct proto_ospf *po,
 	htonlsah(hh, lh);
 	help = (u8 *) (lh + 1);
 	en = ospf_hash_find_header(po->gr, domain, hh);
-	htonlsab(en->lsa_body, help, hh->type, hh->length
-		 - sizeof(struct ospf_lsa_header));
+	htonlsab(en->lsa_body, help, hh->length - sizeof(struct ospf_lsa_header));
       }
 
       len = sizeof(struct ospf_lsupd_packet) + ntohs(lh->length);
@@ -304,8 +303,7 @@ ospf_lsupd_flood(struct proto_ospf *po,
 
       op->length = htons(len);
 
-      OSPF_PACKET(ospf_dump_lsupd,  (struct ospf_lsupd_packet *) ifa->sk->tbuf,
-		  "LSUPD packet flooded via %s", ifa->iface->name);
+      OSPF_PACKET(ospf_dump_lsupd, pk, "LSUPD packet flooded via %s", ifa->iface->name);
 
       switch (ifa->type)
       {
@@ -349,10 +347,10 @@ ospf_lsupd_send_list(struct ospf_neighbor *n, list * l)
   if (EMPTY_LIST(*l))
     return;
 
-  pk = (struct ospf_lsupd_packet *) n->ifa->sk->tbuf;
-  op = (struct ospf_packet *) n->ifa->sk->tbuf;
-
   DBG("LSupd: 1st packet\n");
+
+  pk= ospf_tx_buffer(n->ifa);
+  op = &pk->ospf_packet;
 
   ospf_pkt_fill_hdr(n->ifa, pk, LSUPD_P);
   len = sizeof(struct ospf_lsupd_packet);
@@ -374,8 +372,7 @@ ospf_lsupd_send_list(struct ospf_neighbor *n, list * l)
       pk->lsano = htonl(lsano);
       op->length = htons(len);
 
-      OSPF_PACKET(ospf_dump_lsupd,  (struct ospf_lsupd_packet *) n->ifa->sk->tbuf,
-		  "LSUPD packet sent to %I via %s", n->ip, n->ifa->iface->name);
+      OSPF_PACKET(ospf_dump_lsupd, pk, "LSUPD packet sent to %I via %s", n->ip, n->ifa->iface->name);
       ospf_send_to(n->ifa, n->ip);
 
       DBG("LSupd: next packet\n");
@@ -386,8 +383,7 @@ ospf_lsupd_send_list(struct ospf_neighbor *n, list * l)
     }
     htonlsah(&(en->lsa), pktpos);
     pktpos = pktpos + sizeof(struct ospf_lsa_header);
-    htonlsab(en->lsa_body, pktpos, en->lsa.type, en->lsa.length
-	     - sizeof(struct ospf_lsa_header));
+    htonlsab(en->lsa_body, pktpos, en->lsa.length - sizeof(struct ospf_lsa_header));
     pktpos = pktpos + en->lsa.length - sizeof(struct ospf_lsa_header);
     len += en->lsa.length;
     lsano++;
@@ -397,8 +393,7 @@ ospf_lsupd_send_list(struct ospf_neighbor *n, list * l)
     pk->lsano = htonl(lsano);
     op->length = htons(len);
 
-    OSPF_PACKET(ospf_dump_lsupd,  (struct ospf_lsupd_packet *) n->ifa->sk->tbuf,
-		"LSUPD packet sent to %I via %s", n->ip, n->ifa->iface->name);
+    OSPF_PACKET(ospf_dump_lsupd, pk, "LSUPD packet sent to %I via %s", n->ip, n->ifa->iface->name);
     ospf_send_to(n->ifa, n->ip);
   }
 }
@@ -416,7 +411,7 @@ ospf_lsupd_receive(struct ospf_packet *ps_i, struct ospf_iface *ifa,
   unsigned int size = ntohs(ps_i->length);
   if (size < (sizeof(struct ospf_lsupd_packet) + sizeof(struct ospf_lsa_header)))
   {
-    log(L_ERR "Bad OSPF LSUPD packet from %I -  too short (%u B)", n->ip, size);
+    log(L_ERR "OSPF: Bad LSUPD packet from %I - too short (%u B)", n->ip, size);
     return;
   }
 
@@ -537,7 +532,7 @@ ospf_lsupd_receive(struct ospf_packet *ps_i, struct ospf_iface *ifa,
 	{
 	  if (!nifa->iface)
 	    continue;
-	  if (ipa_equal(nifa->iface->addr->ip, ipa_from_u32(lsatmp.id)))
+	  if (ipa_equal(nifa->addr->ip, ipa_from_u32(lsatmp.id)))
 	  {
 	    self = 1;
 	    break;
@@ -630,8 +625,7 @@ ospf_lsupd_receive(struct ospf_packet *ps_i, struct ospf_iface *ifa,
 
       /* pg 144 (5d) */
       void *body = mb_alloc(p->pool, lsatmp.length - sizeof(struct ospf_lsa_header));
-      ntohlsab(lsa + 1, body, lsatmp.type,
-	       lsatmp.length - sizeof(struct ospf_lsa_header));
+      ntohlsab(lsa + 1, body, lsatmp.length - sizeof(struct ospf_lsa_header));
 
       /* We will do validation check after flooding and
 	 acknowledging given LSA to minimize problems
